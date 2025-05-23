@@ -5,6 +5,9 @@ from cryptography.hazmat.primitives import serialization
 import argparse
 from kalman import KF
 from clients import KalshiHttpClient, KalshiWebSocketClient, Environment
+from vis import Visualizer
+import pandas as pd
+import time
 
 parser = argparse.ArgumentParser(description="Kalshi RL Bot")
 
@@ -20,7 +23,7 @@ args = parser.parse_args()
 
 # Load env variables
 load_dotenv()
-env = Environment.DEMO
+env = Environment.PROD
 
 KEYID = os.getenv("DEMO_KEYID") if env == Environment.DEMO else os.getenv("PROD_KEYID")
 KEYFILE = os.getenv("DEMO_KEYFILE") if env == Environment.DEMO else os.getenv("PROD_KEYFILE")
@@ -45,9 +48,16 @@ except Exception as e:
     print("Error fetching balance:", e)
 
 kalman = KF()
+vis = Visualizer()
 
 if args.train:
-    pass
+    # df=client.get_top_markets(limit=50)
+    # print(df.head())
+    df = client.get_all_trades("KXNBAGAME-25MAY24OKCMIN-OKC")
+    print(df.head())
+    print(df.shape[0])
+    vis.plot_market_percentages(df)
+
 elif args.live:
     ws_client = KalshiWebSocketClient(KEYID, private_key, environment=env, kalman=kalman)
     try:

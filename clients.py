@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 import json
 import certifi
+import pandas as pd
+
 
 from requests.exceptions import HTTPError
 from cryptography.hazmat.primitives import serialization, hashes
@@ -19,7 +21,7 @@ class Environment(Enum):
     PROD = "prod"
 
 class KalshiBaseClient:
-    def __init__(self, key_id: str, private_key: rsa.RSAPrivateKey, environment: Environment = Environment.DEMO):
+    def __init__(self, key_id: str, private_key: rsa.RSAPrivateKey, environment: Environment = Environment.PROD):
         self.key_id = key_id
         self.private_key = private_key
         self.environment = environment
@@ -67,6 +69,7 @@ class KalshiHttpClient(KalshiBaseClient):
         self.exchange_url = "/trade-api/v2/exchange"
         self.markets_url = "/trade-api/v2/markets"
         self.portfolio_url = "/trade-api/v2/portfolio"
+        self.datapath = 'datasets/'
 
     def rate_limit(self):
         threshold_ms = 100
@@ -115,6 +118,48 @@ class KalshiHttpClient(KalshiBaseClient):
 
     def get_balance(self):
         return self.get(self.portfolio_url + "/balance")
+
+    def get_all_trades(self, ticker=None, start_ts=None, end_ts=None):
+        trades = []
+        cursor = None
+        while True:
+            params = {
+                "ticker": ticker,
+                "min_ts": start_ts,
+                "max_ts": end_ts,
+                "limit": 1000,
+            }
+            if cursor:
+                params["cursor"] = cursor
+            response = self.get("/trade-api/v2/markets/trades", params=params)
+            trades.extend(response["trades"])
+            print(response['trades'])
+            if not response.get("cursor"):
+                break
+            cursor = response["cursor"]
+        df = pd.DataFrame(trades)
+        print(df.keys())
+        df["created_time"] = pd.to_datetime(df["created_time"])
+        df.sort_values("created_time", inplace=True)
+        df.to_csv(self.datapath + ticker + ".csv", index=False)
+        return df
+    
+
+    def get_top_markets(self, limit=10):
+        cursor = None
+        markets = []
+        for i in range(limit):
+            response = self.get("/trade-api/v2/markets/", params={"cursor": cursor})
+            #markets = response["markets"]
+            cursor = response['cursor']
+            markets.extend(response['markets'])
+            if not cursor:
+                break
+        sorted_markets = sorted(markets, key=lambda m: m["volume"], reverse=True)
+        df = pd.DataFrame(sorted_markets)
+        df.to_csv(self.datapath + "top_markets.csv", index=False)
+        return df
+
 
 class KalshiWebSocketClient(KalshiBaseClient):
     def __init__(self, key_id: str, private_key: rsa.RSAPrivateKey, environment: Environment = Environment.DEMO, kalman=None):
