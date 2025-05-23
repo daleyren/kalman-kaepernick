@@ -117,11 +117,12 @@ class KalshiHttpClient(KalshiBaseClient):
         return self.get(self.portfolio_url + "/balance")
 
 class KalshiWebSocketClient(KalshiBaseClient):
-    def __init__(self, key_id: str, private_key: rsa.RSAPrivateKey, environment: Environment = Environment.DEMO):
+    def __init__(self, key_id: str, private_key: rsa.RSAPrivateKey, environment: Environment = Environment.DEMO, kalman=None):
         super().__init__(key_id, private_key, environment)
         self.ws = None
         self.url_suffix = "/trade-api/ws/v2"
         self.message_id = 1
+        self.kalman = kalman
 
     async def connect(self):
         """Establishes a WebSocket connection using authentication."""

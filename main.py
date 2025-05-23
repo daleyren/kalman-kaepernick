@@ -2,8 +2,21 @@ import os
 import asyncio
 from dotenv import load_dotenv
 from cryptography.hazmat.primitives import serialization
-
+import argparse
+from kalman import KF
 from clients import KalshiHttpClient, KalshiWebSocketClient, Environment
+
+parser = argparse.ArgumentParser(description="Kalshi RL Bot")
+
+parser.add_argument(
+    "--train", action="store_true",
+    help="Run the system in training mode (using historical data)"
+)
+parser.add_argument(
+    "--live", action="store_true",
+    help="Run the system in live mode (using WebSocket)"
+)
+args = parser.parse_args()
 
 # Load env variables
 load_dotenv()
@@ -31,10 +44,16 @@ try:
 except Exception as e:
     print("Error fetching balance:", e)
 
-# Initialize and run WebSocket client
-ws_client = KalshiWebSocketClient(KEYID, private_key, environment=env)
+kalman = KF()
 
-try:
-    asyncio.run(ws_client.connect())
-except Exception as e:
-    print("WebSocket error:", e)
+if args.train:
+    pass
+elif args.live:
+    ws_client = KalshiWebSocketClient(KEYID, private_key, environment=env, kalman=kalman)
+    try:
+        asyncio.run(ws_client.connect())
+    except Exception as e:
+        print("WebSocket error:", e)
+else:
+    print("⚠️ Please specify --train or --live.")
+
