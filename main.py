@@ -51,9 +51,9 @@ kalman = KF()
 vis = Visualizer()
 
 if args.train:
-    # df=client.get_top_markets(limit=50)
+    # df=client.get_top_markets(limit=500)
     # print(df.head())
-    df = client.get_all_trades("KXNBAGAME-25MAY24OKCMIN-OKC")
+    df = client.get_all_trades("KXNBAGAME-25MAY22MINOKC-MIN")
     print(df.head())
     print(df.shape[0])
     vis.plot_market_percentages(df)

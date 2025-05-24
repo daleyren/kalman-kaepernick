@@ -128,6 +128,8 @@ class KalshiHttpClient(KalshiBaseClient):
                 "min_ts": start_ts,
                 "max_ts": end_ts,
                 "limit": 1000,
+                "include_expired": True,
+                "include_hidden": True
             }
             if cursor:
                 params["cursor"] = cursor
